@@ -41,6 +41,10 @@ public class Hand {
         return cards.size() == 2 && value() == 21;
     }
 
+    public List<Card> cards() {
+        return List.copyOf(cards);
+    }
+
     public String visibleCards() {
         // Used while the dealer's second card is hidden.
         if (cards.isEmpty()) {

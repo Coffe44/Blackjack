@@ -9,7 +9,6 @@ public record Card(Rank rank, Suit suit) {
 
     @Override
     public String toString() {
-        // Example output: A ♥ for ace of hearts, 10 ♠ for ten of spades.
         return rank.label() + " " + suit.symbol();
     }
 }

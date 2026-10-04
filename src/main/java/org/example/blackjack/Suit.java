@@ -1,11 +1,11 @@
 package org.example.blackjack;
 
 public enum Suit {
-    // Suit symbols keep the console output compact and card-like.
-    CLUBS("♣"),
-    DIAMONDS("♦"),
-    HEARTS("♥"),
-    SPADES("♠");
+    // Unicode escapes keep suit symbols stable across terminals and editors.
+    CLUBS("\u2663"),
+    DIAMONDS("\u2666"),
+    HEARTS("\u2665"),
+    SPADES("\u2660");
 
     private final String symbol;
 

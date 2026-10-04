@@ -1,6 +1,6 @@
 # Blackjack
 
-A simple console-based Blackjack game written in Java.
+A simple graphical Blackjack game written in Java Swing.
 
 ## Requirements
 
@@ -39,9 +39,9 @@ java -jar target/blackjack-1.0.0.jar
 
 The goal is to get closer to 21 than the dealer without going over.
 
-- Type `h` or `hit` to draw another card.
-- Type `s` or `stand` to end your turn.
-- Type `y` or `n` after a round to play again or quit.
+- Click `Hit` to draw another card.
+- Click `Stand` to end your turn and let the dealer play.
+- Click `New Round` after a round ends.
 
 ## Rules
 
@@ -61,5 +61,6 @@ src/main/java/org/example/blackjack
 Main classes:
 
 - `BlackjackApplication` starts the program.
-- `BlackjackGame` contains the game loop and round logic.
+- `BlackjackFrame` contains the graphical interface.
+- `BlackjackTable` contains the game state and round logic.
 - `Deck`, `Card`, `Hand`, `Rank`, and `Suit` model the cards and scoring.
