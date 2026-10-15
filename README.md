@@ -39,6 +39,8 @@ java -jar target/blackjack-1.0.0.jar
 
 The goal is to get closer to 21 than the dealer without going over.
 
+- Enter starting chip amounts for the player and the house when the game opens.
+- Set the bet before starting each new round.
 - Click `Hit` to draw another card.
 - Click `Stand` to end your turn and let the dealer play.
 - Click `New Round` after a round ends.

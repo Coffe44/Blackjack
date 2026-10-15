@@ -6,8 +6,10 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.JTextField;
 import javax.swing.WindowConstants;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -22,20 +24,26 @@ public class BlackjackFrame extends JFrame {
     private static final Color PANEL_GREEN = new Color(31, 119, 82);
     private static final Color CARD_RED = new Color(171, 39, 39);
     private static final Color TEXT_LIGHT = new Color(247, 249, 245);
+    private static final int DEFAULT_STARTING_CHIPS = 100;
 
-    private final BlackjackTable table = new BlackjackTable();
+    private final BlackjackTable table;
     private final JPanel dealerCards = new JPanel();
     private final JPanel playerCards = new JPanel();
     private final JLabel dealerValue = new JLabel();
     private final JLabel playerValue = new JLabel();
     private final JLabel message = new JLabel();
     private final JLabel record = new JLabel();
+    private final JLabel chips = new JLabel();
+    private final JTextField betField = new JTextField(5);
     private final JButton hitButton = new JButton("Hit");
     private final JButton standButton = new JButton("Stand");
     private final JButton newRoundButton = new JButton("New Round");
 
     public BlackjackFrame() {
         super("Blackjack");
+        int[] startingValues = promptForStartingValues();
+        table = new BlackjackTable(startingValues[0], startingValues[1], startingValues[2]);
+
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(760, 560));
         setLocationByPlatform(true);
@@ -58,8 +66,7 @@ public class BlackjackFrame extends JFrame {
             updateView();
         });
         newRoundButton.addActionListener(event -> {
-            table.startNewRound();
-            updateView();
+            startNewRoundFromBetField();
         });
 
         updateView();
@@ -78,8 +85,17 @@ public class BlackjackFrame extends JFrame {
         record.setHorizontalAlignment(SwingConstants.RIGHT);
         record.setFont(record.getFont().deriveFont(Font.BOLD, 16f));
 
+        chips.setForeground(TEXT_LIGHT);
+        chips.setHorizontalAlignment(SwingConstants.RIGHT);
+        chips.setFont(chips.getFont().deriveFont(Font.BOLD, 16f));
+
+        JPanel stats = new JPanel(new GridLayout(2, 1, 0, 4));
+        stats.setOpaque(false);
+        stats.add(record);
+        stats.add(chips);
+
         header.add(title, BorderLayout.WEST);
-        header.add(record, BorderLayout.EAST);
+        header.add(stats, BorderLayout.EAST);
         return header;
     }
 
@@ -133,8 +149,22 @@ public class BlackjackFrame extends JFrame {
         buttons.add(standButton);
         buttons.add(newRoundButton);
 
+        JPanel betting = new JPanel();
+        betting.setOpaque(false);
+        JLabel betLabel = new JLabel("Bet");
+        betLabel.setForeground(TEXT_LIGHT);
+        betLabel.setFont(betLabel.getFont().deriveFont(Font.BOLD, 16f));
+        betField.setHorizontalAlignment(SwingConstants.RIGHT);
+        betting.add(betLabel);
+        betting.add(betField);
+
+        JPanel actions = new JPanel(new BorderLayout(10, 0));
+        actions.setOpaque(false);
+        actions.add(betting, BorderLayout.WEST);
+        actions.add(buttons, BorderLayout.EAST);
+
         controls.add(message, BorderLayout.CENTER);
-        controls.add(buttons, BorderLayout.EAST);
+        controls.add(actions, BorderLayout.EAST);
         return controls;
     }
 
@@ -148,13 +178,85 @@ public class BlackjackFrame extends JFrame {
         playerValue.setText("Value: " + table.player().value());
         message.setText(table.message());
         record.setText("Wins " + table.wins() + "   Losses " + table.losses() + "   Pushes " + table.pushes());
+        chips.setText("You " + table.playerChips() + " chips   House " + table.dealerChips() + " chips");
+        betField.setText(String.valueOf(table.currentBet()));
 
         hitButton.setEnabled(!table.isRoundOver());
         standButton.setEnabled(!table.isRoundOver());
-        newRoundButton.setEnabled(table.isRoundOver());
+        newRoundButton.setEnabled(table.isRoundOver() && table.hasChipsForAnotherRound());
+        betField.setEnabled(table.isRoundOver() && table.hasChipsForAnotherRound());
 
         revalidate();
         repaint();
+    }
+
+    private void startNewRoundFromBetField() {
+        try {
+            int bet = parsePositiveInt(betField.getText(), "Bet");
+            table.startNewRound(bet);
+            updateView();
+        } catch (IllegalArgumentException exception) {
+            JOptionPane.showMessageDialog(this, exception.getMessage(), "Invalid Bet", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private int[] promptForStartingValues() {
+        JTextField playerChips = new JTextField(String.valueOf(DEFAULT_STARTING_CHIPS), 8);
+        JTextField dealerChips = new JTextField(String.valueOf(DEFAULT_STARTING_CHIPS), 8);
+        JTextField startingBet = new JTextField("10", 8);
+
+        JPanel panel = new JPanel(new GridLayout(3, 2, 8, 8));
+        panel.add(new JLabel("Player chips"));
+        panel.add(playerChips);
+        panel.add(new JLabel("House chips"));
+        panel.add(dealerChips);
+        panel.add(new JLabel("Starting bet"));
+        panel.add(startingBet);
+
+        while (true) {
+            int option = JOptionPane.showConfirmDialog(
+                    null,
+                    panel,
+                    "Starting Chips",
+                    JOptionPane.OK_CANCEL_OPTION,
+                    JOptionPane.PLAIN_MESSAGE
+            );
+
+            if (option != JOptionPane.OK_OPTION) {
+                return new int[]{DEFAULT_STARTING_CHIPS, DEFAULT_STARTING_CHIPS, 10};
+            }
+
+            try {
+                int parsedPlayerChips = parsePositiveInt(playerChips.getText(), "Player chips");
+                int parsedDealerChips = parsePositiveInt(dealerChips.getText(), "House chips");
+                int parsedStartingBet = parsePositiveInt(startingBet.getText(), "Starting bet");
+                validateBet(parsedStartingBet, parsedPlayerChips, parsedDealerChips);
+                return new int[]{parsedPlayerChips, parsedDealerChips, parsedStartingBet};
+            } catch (IllegalArgumentException exception) {
+                JOptionPane.showMessageDialog(null, exception.getMessage(), "Invalid Starting Values", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void validateBet(int bet, int playerChips, int dealerChips) {
+        if (bet > playerChips) {
+            throw new IllegalArgumentException("You cannot bet more chips than you have.");
+        }
+        if (bet > dealerChips) {
+            throw new IllegalArgumentException("The house cannot cover that bet.");
+        }
+    }
+
+    private int parsePositiveInt(String text, String label) {
+        try {
+            int value = Integer.parseInt(text.trim());
+            if (value < 1) {
+                throw new NumberFormatException();
+            }
+            return value;
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException(label + " must be a whole number greater than 0.");
+        }
     }
 
     private void renderCards(JPanel target, List<Card> cards, boolean hideSecondCard) {
@@ -189,13 +291,13 @@ public class BlackjackFrame extends JFrame {
     }
 
     private JLabel createHiddenCard() {
-        JLabel label = new JLabel("?");
+        JLabel label = new JLabel("<html><center>&#9670;<br>&#10022;<br>&#9670;</center></html>");
         label.setOpaque(true);
         label.setBackground(new Color(34, 55, 114));
-        label.setForeground(Color.WHITE);
+        label.setForeground(new Color(236, 224, 181));
         label.setHorizontalAlignment(SwingConstants.CENTER);
         label.setVerticalAlignment(SwingConstants.CENTER);
-        label.setFont(label.getFont().deriveFont(Font.BOLD, 32f));
+        label.setFont(label.getFont().deriveFont(Font.BOLD, 24f));
         label.setBorder(BorderFactory.createLineBorder(Color.WHITE, 2));
         label.setPreferredSize(new Dimension(82, 116));
         label.setMaximumSize(new Dimension(82, 116));
